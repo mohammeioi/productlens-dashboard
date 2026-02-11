@@ -1,7 +1,7 @@
-# Updated app.py
+# Functionality to update price formatting
 
-# Your existing app.py content here, with line 57 updated:
+# Example of changing the price formatting from comma to integer
+price = 10000  # example price
 
-"السعر": price,
-
-# The rest of your app.py content...
+# Correct format
+result = {"السعر": price}
