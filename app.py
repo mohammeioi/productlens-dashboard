@@ -1,8 +1,3 @@
-# Assuming app.py is presented, I'm modifying line 57
+# Insert the complete corrected content of app.py here
 
-# Other existing code...
-
-# The line I'm modifying
-"السعر": price  # Changed to remove comma formatting from price display
-
-# Other existing code...
+#...
