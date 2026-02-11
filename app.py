@@ -70,7 +70,7 @@ if st.button("إضافة المنتج للقائمة"):
     if name and image_url:
         new_product = {
             "الاسم": name,
-            "السعر": price,
+            "السعر": f"{int(price):,}", # تنسيق السعر مع فواصل للآلاف في الجدول
             "الفئة": category,
             "رابط الصورة": image_url
         }

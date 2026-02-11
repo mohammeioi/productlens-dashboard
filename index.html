@@ -1,0 +1,2025 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدير المنتجات الذكي</title>
+    <meta name="description" content="نظام إدارة المنتجات الذكي - إضافة وتعديل وتصدير المنتجات">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script type="module">
+        import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3';
+        window.transformersReady = Promise.resolve({ pipeline, env });
+    </script>
+    <style>
+        :root {
+            --bg-primary: #0f0f1a;
+            --bg-secondary: #1a1a2e;
+            --bg-card: #16213e;
+            --bg-input: #1a1a3e;
+            --accent-1: #e94560;
+            --accent-2: #0f3460;
+            --accent-3: #533483;
+            --gradient-1: linear-gradient(135deg, #e94560, #533483);
+            --gradient-2: linear-gradient(135deg, #0f3460, #533483);
+            --gradient-3: linear-gradient(135deg, #e94560, #0f3460);
+            --text-primary: #eaeaea;
+            --text-secondary: #a0a0b8;
+            --text-muted: #6c6c8a;
+            --border: rgba(255, 255, 255, 0.08);
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            --radius: 16px;
+            --radius-sm: 10px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Background Animation */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 20% 80%, rgba(233, 69, 96, 0.06) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(83, 52, 131, 0.06) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(15, 52, 96, 0.08) 0%, transparent 50%);
+            animation: bgFloat 20s ease-in-out infinite;
+            z-index: 0;
+        }
+
+        @keyframes bgFloat {
+
+            0%,
+            100% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+
+            33% {
+                transform: translate(30px, -30px) rotate(1deg);
+            }
+
+            66% {
+                transform: translate(-20px, 20px) rotate(-1deg);
+            }
+        }
+
+        /* Header */
+        .app-header {
+            background: linear-gradient(180deg, rgba(26, 26, 46, 0.95), rgba(15, 15, 26, 0.9));
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 24px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .app-header h1 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            display: flex;
+            gap: 4px;
+            padding: 8px 24px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .nav-tab {
+            padding: 10px 20px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            transition: var(--transition);
+            white-space: nowrap;
+            position: relative;
+        }
+
+        .nav-tab:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-tab.active {
+            color: #fff;
+            background: var(--gradient-1);
+            box-shadow: 0 4px 15px rgba(233, 69, 96, 0.3);
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeSlideIn 0.4s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            border-color: rgba(233, 69, 96, 0.2);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title .icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            background: var(--gradient-1);
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        .form-input,
+        .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: var(--transition);
+            outline: none;
+        }
+
+        .form-input:focus,
+        .form-select:focus {
+            border-color: var(--accent-1);
+            box-shadow: 0 0 0 3px rgba(233, 69, 96, 0.15);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: var(--gradient-1);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(233, 69, 96, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(233, 69, 96, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--gradient-2);
+            color: #fff;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(15, 52, 96, 0.4);
+        }
+
+        .btn-ghost {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-ghost:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        .btn-danger {
+            background: rgba(233, 69, 96, 0.15);
+            color: var(--accent-1);
+            border: 1px solid rgba(233, 69, 96, 0.3);
+        }
+
+        .btn-danger:hover {
+            background: rgba(233, 69, 96, 0.25);
+        }
+
+        .btn-success {
+            background: rgba(46, 204, 113, 0.15);
+            color: #2ecc71;
+            border: 1px solid rgba(46, 204, 113, 0.3);
+        }
+
+        .btn-success:hover {
+            background: rgba(46, 204, 113, 0.25);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+        }
+
+        /* Fields List (Settings) */
+        .fields-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .field-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            transition: var(--transition);
+        }
+
+        .field-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(233, 69, 96, 0.2);
+        }
+
+        .field-item .field-drag {
+            color: var(--text-muted);
+            cursor: grab;
+            font-size: 1.2rem;
+        }
+
+        .field-item .field-info {
+            flex: 1;
+        }
+
+        .field-item .field-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .field-item .field-type {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .field-item .field-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        /* Image Upload */
+        .image-upload-area {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .image-upload-area:hover {
+            border-color: var(--accent-1);
+            background: rgba(233, 69, 96, 0.05);
+        }
+
+        .image-upload-area.has-image {
+            padding: 10px;
+            border-style: solid;
+        }
+
+        .image-upload-area .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 12px;
+        }
+
+        .image-upload-area .upload-text {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .image-upload-area img {
+            max-width: 100%;
+            max-height: 250px;
+            border-radius: var(--radius-sm);
+            object-fit: contain;
+        }
+
+        .image-upload-area input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        /* Background Removal */
+        .image-preview-container {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            align-items: flex-start;
+        }
+
+        .image-preview-box {
+            flex: 1;
+            min-width: 200px;
+            text-align: center;
+        }
+
+        .image-preview-box img {
+            max-width: 100%;
+            max-height: 220px;
+            border-radius: var(--radius-sm);
+            object-fit: contain;
+            border: 1px solid var(--border);
+        }
+
+        .image-preview-box .preview-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+            font-weight: 500;
+        }
+
+        .bg-remove-btn {
+            margin-top: 12px;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 12px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--gradient-1);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .progress-text {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+            text-align: center;
+        }
+
+        @media (max-width: 480px) {
+            .image-preview-container {
+                flex-direction: column;
+            }
+        }
+
+        /* Product Table */
+        .table-container {
+            overflow-x: auto;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+        }
+
+        .product-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+
+        .product-table th {
+            padding: 14px 16px;
+            text-align: right;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        .product-table td {
+            padding: 14px 16px;
+            font-size: 0.9rem;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+
+        .product-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .product-table tr:hover td {
+            background: rgba(233, 69, 96, 0.04);
+        }
+
+        .product-table .img-cell img {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+
+        .product-table .actions-cell {
+            display: flex;
+            gap: 6px;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state p {
+            font-size: 1rem;
+            margin-bottom: 20px;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            animation: modalFadeIn 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                transform: translateY(20px) scale(0.95);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .toast {
+            padding: 14px 24px;
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            font-weight: 500;
+            animation: toastIn 0.4s ease;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            min-width: 280px;
+            text-align: center;
+        }
+
+        .toast.success {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: #fff;
+        }
+
+        .toast.error {
+            background: linear-gradient(135deg, #e94560, #c0392b);
+            color: #fff;
+        }
+
+        .toast.info {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: #fff;
+        }
+
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-text {
+            background: rgba(52, 152, 219, 0.15);
+            color: #3498db;
+        }
+
+        .badge-number {
+            background: rgba(46, 204, 113, 0.15);
+            color: #2ecc71;
+        }
+
+        .badge-select {
+            background: rgba(155, 89, 182, 0.15);
+            color: #9b59b6;
+        }
+
+        .badge-url {
+            background: rgba(241, 196, 15, 0.15);
+            color: #f1c40f;
+        }
+
+        .badge-image {
+            background: rgba(233, 69, 96, 0.15);
+            color: #e94560;
+        }
+
+        /* Stats */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            text-align: center;
+            transition: var(--transition);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .app-header h1 {
+                font-size: 1.1rem;
+            }
+
+            .main-content {
+                padding: 16px;
+            }
+
+            .card {
+                padding: 16px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-tabs {
+                padding: 8px 12px;
+            }
+
+            .nav-tab {
+                padding: 8px 14px;
+                font-size: 0.85rem;
+            }
+
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .field-item {
+                flex-wrap: wrap;
+            }
+
+            .field-item .field-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+
+            .modal {
+                padding: 20px;
+                margin: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-row {
+                grid-template-columns: 1fr;
+            }
+
+            .header-actions {
+                display: none;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Select option fix */
+        .form-select option {
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        /* Editable cell */
+        .editable-cell {
+            cursor: pointer;
+            position: relative;
+        }
+
+        .editable-cell:hover::after {
+            content: '✏️';
+            position: absolute;
+            left: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.7rem;
+        }
+
+        .product-image-preview {
+            width: 45px;
+            height: 45px;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 1px solid var(--border);
+        }
+
+        /* Column add button in table header */
+        .add-column-th {
+            cursor: pointer;
+            color: var(--accent-1) !important;
+            transition: var(--transition);
+            min-width: 44px;
+        }
+
+        .add-column-th:hover {
+            background: rgba(233, 69, 96, 0.1) !important;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Header -->
+    <header class="app-header">
+        <h1>📦 مدير المنتجات الذكي</h1>
+        <div class="header-actions">
+            <button class="btn btn-ghost btn-sm" onclick="exportToExcel()" title="تصدير Excel">📥 تصدير</button>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav-tabs">
+        <button class="nav-tab active" data-tab="products" onclick="switchTab('products')">📋 المنتجات</button>
+        <button class="nav-tab" data-tab="add" onclick="switchTab('add')">➕ إضافة منتج</button>
+        <button class="nav-tab" data-tab="settings" onclick="switchTab('settings')">⚙️ إعدادات الحقول</button>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+        <!-- ===== TAB: Products List ===== -->
+        <div class="tab-content active" id="tab-products">
+            <div class="stats-row" id="statsRow">
+                <div class="stat-card">
+                    <div class="stat-value" id="statTotal">0</div>
+                    <div class="stat-label">إجمالي المنتجات</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statCategories">0</div>
+                    <div class="stat-label">الفئات</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statFields">0</div>
+                    <div class="stat-label">الحقول</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="icon">📋</div>
+                        قائمة المنتجات
+                    </div>
+                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                        <input type="text" class="form-input" id="searchInput" placeholder="🔍 بحث..."
+                            style="width:200px; padding:8px 14px; font-size:0.85rem;" oninput="renderProducts()">
+                        <button class="btn btn-secondary btn-sm" onclick="openAddColumnModal()">➕ عمود جديد</button>
+                    </div>
+                </div>
+                <div class="table-container" id="tableContainer">
+                    <div class="empty-state" id="emptyProducts">
+                        <div class="empty-icon">📦</div>
+                        <p>لا توجد منتجات بعد</p>
+                        <button class="btn btn-primary" onclick="switchTab('add')">➕ أضف أول منتج</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== TAB: Add Product ===== -->
+        <div class="tab-content" id="tab-add">
+            <!-- Image Upload -->
+            <div class="card">
+                <div class="card-title" style="margin-bottom:16px;">
+                    <div class="icon">🖼️</div>
+                    صورة المنتج
+                </div>
+                <div class="image-upload-area" id="imageUploadArea">
+                    <div class="upload-icon">📸</div>
+                    <div class="upload-text">اضغط أو اسحب صورة هنا</div>
+                    <input type="file" id="imageInput" accept="image/*" onchange="handleImageUpload(event)">
+                </div>
+                <!-- Before/After Preview -->
+                <div id="imagePreviewSection" style="display:none; margin-top:16px;">
+                    <div class="image-preview-container">
+                        <div class="image-preview-box">
+                            <img id="originalPreview" src="" alt="الصورة الأصلية">
+                            <div class="preview-label">📷 الصورة الأصلية</div>
+                        </div>
+                        <div class="image-preview-box" id="processedBox" style="display:none;">
+                            <img id="processedPreview" src="" alt="الصورة المعالجة">
+                            <div class="preview-label">✨ بعد حذف الخلفية</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary bg-remove-btn" id="bgRemoveBtn" onclick="removeBackground()">
+                        🪄 حذف خلفية الصورة
+                    </button>
+                    <div id="progressContainer" style="display:none;">
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" id="progressBar"></div>
+                        </div>
+                        <div class="progress-text" id="progressText">جاري المعالجة...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dynamic Product Form -->
+            <div class="card">
+                <div class="card-title" style="margin-bottom:16px;">
+                    <div class="icon">📝</div>
+                    تفاصيل المنتج
+                </div>
+                <div id="productForm"></div>
+                <div style="margin-top:20px; display:flex; gap:10px;">
+                    <button class="btn btn-primary" onclick="addProduct()" style="flex:1;">➕ إضافة المنتج
+                        للقائمة</button>
+                    <button class="btn btn-ghost" onclick="clearForm()">🗑️ مسح</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== TAB: Settings ===== -->
+        <div class="tab-content" id="tab-settings">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="icon">⚙️</div>
+                        إعدادات حقول المنتج
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="openAddFieldModal()">➕ حقل جديد</button>
+                </div>
+                <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:16px;">
+                    قم بإضافة أو تعديل أو حذف حقول تفاصيل المنتج. التغييرات تنعكس مباشرة على نموذج الإضافة وجدول
+                    المنتجات.
+                </p>
+                <div class="fields-list" id="fieldsList"></div>
+            </div>
+
+            <!-- Category Management -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="icon">🏷️</div>
+                        إدارة الفئات
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="openAddCategoryModal()">➕ فئة جديدة</button>
+                </div>
+                <div class="fields-list" id="categoriesList"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL: Add/Edit Field -->
+    <div class="modal-overlay" id="fieldModal">
+        <div class="modal">
+            <div class="modal-title">
+                <span id="fieldModalIcon">➕</span>
+                <span id="fieldModalTitle">إضافة حقل جديد</span>
+            </div>
+            <div class="form-group">
+                <label class="form-label">اسم الحقل</label>
+                <input type="text" class="form-input" id="fieldNameInput" placeholder="مثال: اللون، الوزن...">
+            </div>
+            <div class="form-group">
+                <label class="form-label">نوع الحقل</label>
+                <select class="form-select" id="fieldTypeInput">
+                    <option value="text">📝 نص</option>
+                    <option value="number">🔢 رقم</option>
+                    <option value="select">📋 قائمة منسدلة</option>
+                    <option value="url">🔗 رابط</option>
+                </select>
+            </div>
+            <div class="form-group" id="selectOptionsGroup" style="display:none;">
+                <label class="form-label">خيارات القائمة (مفصولة بفاصلة)</label>
+                <input type="text" class="form-input" id="selectOptionsInput" placeholder="خيار1, خيار2, خيار3">
+            </div>
+            <input type="hidden" id="editFieldIndex" value="-1">
+            <div class="modal-actions">
+                <button class="btn btn-ghost" onclick="closeModal('fieldModal')">إلغاء</button>
+                <button class="btn btn-primary" onclick="saveField()">💾 حفظ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Add Category -->
+    <div class="modal-overlay" id="categoryModal">
+        <div class="modal">
+            <div class="modal-title">➕ إضافة فئة جديدة</div>
+            <div class="form-group">
+                <label class="form-label">اسم الفئة</label>
+                <input type="text" class="form-input" id="categoryNameInput" placeholder="اسم الفئة الجديدة">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" onclick="closeModal('categoryModal')">إلغاء</button>
+                <button class="btn btn-primary" onclick="saveCategory()">💾 حفظ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Add Column -->
+    <div class="modal-overlay" id="columnModal">
+        <div class="modal">
+            <div class="modal-title">➕ إضافة عمود جديد للجدول</div>
+            <div class="form-group">
+                <label class="form-label">اسم العمود</label>
+                <input type="text" class="form-input" id="columnNameInput" placeholder="اسم العمود الجديد">
+            </div>
+            <div class="form-group">
+                <label class="form-label">نوع العمود</label>
+                <select class="form-select" id="columnTypeInput">
+                    <option value="text">📝 نص</option>
+                    <option value="number">🔢 رقم</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" onclick="closeModal('columnModal')">إلغاء</button>
+                <button class="btn btn-primary" onclick="saveColumn()">💾 حفظ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Edit Product -->
+    <div class="modal-overlay" id="editProductModal">
+        <div class="modal">
+            <div class="modal-title">✏️ تعديل المنتج</div>
+            <div id="editProductForm"></div>
+            <input type="hidden" id="editProductIndex" value="-1">
+            <div class="modal-actions">
+                <button class="btn btn-ghost" onclick="closeModal('editProductModal')">إلغاء</button>
+                <button class="btn btn-primary" onclick="saveEditProduct()">💾 حفظ التعديلات</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Confirm Delete -->
+    <div class="modal-overlay" id="deleteModal">
+        <div class="modal">
+            <div class="modal-title">⚠️ تأكيد الحذف</div>
+            <p style="color:var(--text-secondary); margin-bottom:8px;">هل أنت متأكد من حذف هذا العنصر؟</p>
+            <p style="color:var(--accent-1); font-weight:600;" id="deleteItemName"></p>
+            <input type="hidden" id="deleteType" value="">
+            <input type="hidden" id="deleteIndex" value="">
+            <div class="modal-actions">
+                <button class="btn btn-ghost" onclick="closeModal('deleteModal')">إلغاء</button>
+                <button class="btn btn-danger" onclick="confirmDelete()">🗑️ حذف</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // =============================================
+        // DATA
+        // =============================================
+        const DEFAULT_FIELDS = [
+            { name: 'الاسم', type: 'text', options: [] },
+            { name: 'السعر', type: 'number', options: [] },
+            { name: 'الفئة', type: 'select', options: ['عام'] },
+            { name: 'رابط الصورة', type: 'url', options: [] }
+        ];
+
+        function loadData() {
+            return {
+                fields: JSON.parse(localStorage.getItem('pm_fields') || 'null') || JSON.parse(JSON.stringify(DEFAULT_FIELDS)),
+                products: JSON.parse(localStorage.getItem('pm_products') || '[]'),
+                categories: JSON.parse(localStorage.getItem('pm_categories') || '["عام"]'),
+                extraColumns: JSON.parse(localStorage.getItem('pm_extra_columns') || '[]')
+            };
+        }
+
+        function saveData(data) {
+            localStorage.setItem('pm_fields', JSON.stringify(data.fields));
+            localStorage.setItem('pm_products', JSON.stringify(data.products));
+            localStorage.setItem('pm_categories', JSON.stringify(data.categories));
+            localStorage.setItem('pm_extra_columns', JSON.stringify(data.extraColumns));
+        }
+
+        let appData = loadData();
+        let currentImageData = null;
+
+        // =============================================
+        // TAB SWITCHING
+        // =============================================
+        function switchTab(tabId) {
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+
+            if (tabId === 'products') renderProducts();
+            if (tabId === 'add') renderProductForm();
+            if (tabId === 'settings') { renderFieldsList(); renderCategoriesList(); }
+        }
+
+        // =============================================
+        // TOAST NOTIFICATIONS
+        // =============================================
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateY(-10px)'; setTimeout(() => toast.remove(), 300); }, 2500);
+        }
+
+        // =============================================
+        // MODAL HELPERS
+        // =============================================
+        function openModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+        // Close modals on overlay click
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) overlay.classList.remove('active');
+            });
+        });
+
+        // =============================================
+        // FIELDS SETTINGS
+        // =============================================
+        function getTypeBadge(type) {
+            const badges = {
+                text: '<span class="badge badge-text">📝 نص</span>',
+                number: '<span class="badge badge-number">🔢 رقم</span>',
+                select: '<span class="badge badge-select">📋 قائمة</span>',
+                url: '<span class="badge badge-url">🔗 رابط</span>',
+                image: '<span class="badge badge-image">🖼️ صورة</span>'
+            };
+            return badges[type] || badges.text;
+        }
+
+        function renderFieldsList() {
+            const container = document.getElementById('fieldsList');
+            if (appData.fields.length === 0) {
+                container.innerHTML = '<div class="empty-state"><p>لا توجد حقول. أضف حقلاً جديداً.</p></div>';
+                return;
+            }
+            container.innerHTML = appData.fields.map((field, i) => `
+        <div class="field-item">
+            <span class="field-drag">☰</span>
+            <div class="field-info">
+                <div class="field-name">${field.name}</div>
+                <div class="field-type">${getTypeBadge(field.type)}${field.type === 'select' ? ' — ' + (field.options || []).join(', ') : ''}</div>
+            </div>
+            <div class="field-actions">
+                <button class="btn btn-ghost btn-sm" onclick="editField(${i})" title="تعديل">✏️</button>
+                <button class="btn btn-danger btn-sm" onclick="promptDeleteField(${i})" title="حذف">🗑️</button>
+            </div>
+        </div>
+    `).join('');
+        }
+
+        function openAddFieldModal() {
+            document.getElementById('fieldNameInput').value = '';
+            document.getElementById('fieldTypeInput').value = 'text';
+            document.getElementById('selectOptionsInput').value = '';
+            document.getElementById('selectOptionsGroup').style.display = 'none';
+            document.getElementById('editFieldIndex').value = '-1';
+            document.getElementById('fieldModalTitle').textContent = 'إضافة حقل جديد';
+            document.getElementById('fieldModalIcon').textContent = '➕';
+            openModal('fieldModal');
+        }
+
+        function editField(index) {
+            const field = appData.fields[index];
+            document.getElementById('fieldNameInput').value = field.name;
+            document.getElementById('fieldTypeInput').value = field.type;
+            document.getElementById('selectOptionsInput').value = (field.options || []).join(', ');
+            document.getElementById('selectOptionsGroup').style.display = field.type === 'select' ? 'block' : 'none';
+            document.getElementById('editFieldIndex').value = index;
+            document.getElementById('fieldModalTitle').textContent = 'تعديل الحقل';
+            document.getElementById('fieldModalIcon').textContent = '✏️';
+            openModal('fieldModal');
+        }
+
+        document.getElementById('fieldTypeInput').addEventListener('change', function () {
+            document.getElementById('selectOptionsGroup').style.display = this.value === 'select' ? 'block' : 'none';
+        });
+
+        function saveField() {
+            const name = document.getElementById('fieldNameInput').value.trim();
+            const type = document.getElementById('fieldTypeInput').value;
+            const optionsStr = document.getElementById('selectOptionsInput').value.trim();
+            const editIndex = parseInt(document.getElementById('editFieldIndex').value);
+
+            if (!name) { showToast('يرجى إدخال اسم الحقل', 'error'); return; }
+
+            const options = type === 'select' ? optionsStr.split(',').map(o => o.trim()).filter(o => o) : [];
+
+            if (editIndex >= 0) {
+                const oldName = appData.fields[editIndex].name;
+                appData.fields[editIndex] = { name, type, options };
+                // Update existing products if field name changed
+                if (oldName !== name) {
+                    appData.products.forEach(p => {
+                        if (p[oldName] !== undefined) {
+                            p[name] = p[oldName];
+                            delete p[oldName];
+                        }
+                    });
+                }
+                showToast('تم تعديل الحقل بنجاح');
+            } else {
+                appData.fields.push({ name, type, options });
+                showToast('تم إضافة الحقل بنجاح');
+            }
+
+            saveData(appData);
+            renderFieldsList();
+            closeModal('fieldModal');
+        }
+
+        function promptDeleteField(index) {
+            document.getElementById('deleteItemName').textContent = appData.fields[index].name;
+            document.getElementById('deleteType').value = 'field';
+            document.getElementById('deleteIndex').value = index;
+            openModal('deleteModal');
+        }
+
+        // =============================================
+        // CATEGORIES
+        // =============================================
+        function renderCategoriesList() {
+            const container = document.getElementById('categoriesList');
+            container.innerHTML = appData.categories.map((cat, i) => `
+        <div class="field-item">
+            <span class="field-drag">🏷️</span>
+            <div class="field-info">
+                <div class="field-name">${cat}</div>
+            </div>
+            <div class="field-actions">
+                <button class="btn btn-danger btn-sm" onclick="promptDeleteCategory(${i})" title="حذف">🗑️</button>
+            </div>
+        </div>
+    `).join('');
+
+            // Update category field options
+            const catField = appData.fields.find(f => f.type === 'select');
+            if (catField) {
+                catField.options = [...appData.categories];
+                saveData(appData);
+            }
+        }
+
+        function openAddCategoryModal() {
+            document.getElementById('categoryNameInput').value = '';
+            openModal('categoryModal');
+        }
+
+        function saveCategory() {
+            const name = document.getElementById('categoryNameInput').value.trim();
+            if (!name) { showToast('يرجى إدخال اسم الفئة', 'error'); return; }
+            if (appData.categories.includes(name)) { showToast('الفئة موجودة مسبقاً', 'error'); return; }
+            appData.categories.push(name);
+            saveData(appData);
+            renderCategoriesList();
+            closeModal('categoryModal');
+            showToast('تم إضافة الفئة بنجاح');
+        }
+
+        function promptDeleteCategory(index) {
+            document.getElementById('deleteItemName').textContent = appData.categories[index];
+            document.getElementById('deleteType').value = 'category';
+            document.getElementById('deleteIndex').value = index;
+            openModal('deleteModal');
+        }
+
+        // =============================================
+        // DELETE CONFIRMATION
+        // =============================================
+        function confirmDelete() {
+            const type = document.getElementById('deleteType').value;
+            const index = parseInt(document.getElementById('deleteIndex').value);
+
+            if (type === 'field') {
+                const fieldName = appData.fields[index].name;
+                appData.fields.splice(index, 1);
+                appData.products.forEach(p => delete p[fieldName]);
+                saveData(appData);
+                renderFieldsList();
+                showToast('تم حذف الحقل');
+            } else if (type === 'category') {
+                appData.categories.splice(index, 1);
+                saveData(appData);
+                renderCategoriesList();
+                showToast('تم حذف الفئة');
+            } else if (type === 'product') {
+                appData.products.splice(index, 1);
+                saveData(appData);
+                renderProducts();
+                showToast('تم حذف المنتج');
+            } else if (type === 'column') {
+                const colName = document.getElementById('deleteItemName').textContent;
+                appData.extraColumns = appData.extraColumns.filter(c => c.name !== colName);
+                appData.products.forEach(p => delete p[colName]);
+                saveData(appData);
+                renderProducts();
+                showToast('تم حذف العمود');
+            }
+
+            closeModal('deleteModal');
+        }
+
+        // =============================================
+        // PRODUCT FORM (DYNAMIC)
+        // =============================================
+        function renderProductForm() {
+            const container = document.getElementById('productForm');
+            const fields = appData.fields;
+
+            let html = '<div class="form-row">';
+            fields.forEach((field, i) => {
+                if (field.type === 'url' && field.name.includes('صورة')) return; // image handled separately
+
+                html += `<div class="form-group">
+            <label class="form-label">${field.name}</label>`;
+
+                if (field.type === 'select') {
+                    html += `<select class="form-select" id="field_${i}">
+                <option value="">اختر ${field.name}</option>
+                ${(field.options || appData.categories).map(o => `<option value="${o}">${o}</option>`).join('')}
+            </select>`;
+                } else if (field.type === 'number') {
+                    html += `<input type="number" class="form-input" id="field_${i}" placeholder="أدخل ${field.name}" min="0" step="250">`;
+                } else if (field.type === 'url') {
+                    html += `<input type="url" class="form-input" id="field_${i}" placeholder="أدخل ${field.name}">`;
+                } else {
+                    html += `<input type="text" class="form-input" id="field_${i}" placeholder="أدخل ${field.name}">`;
+                }
+
+                html += `</div>`;
+            });
+            html += '</div>';
+
+            // Extra columns as extra fields
+            if (appData.extraColumns.length > 0) {
+                html += '<div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">';
+                html += '<div class="form-row">';
+                appData.extraColumns.forEach((col, i) => {
+                    html += `<div class="form-group">
+                <label class="form-label">${col.name} <span style="color:var(--text-muted); font-size:0.75rem;">(عمود إضافي)</span></label>
+                <input type="${col.type === 'number' ? 'number' : 'text'}" class="form-input" id="extra_${i}" placeholder="أدخل ${col.name}">
+            </div>`;
+                });
+                html += '</div></div>';
+            }
+
+            container.innerHTML = html;
+        }
+
+        function clearForm() {
+            appData.fields.forEach((_, i) => {
+                const el = document.getElementById(`field_${i}`);
+                if (el) el.value = '';
+            });
+            appData.extraColumns.forEach((_, i) => {
+                const el = document.getElementById(`extra_${i}`);
+                if (el) el.value = '';
+            });
+            currentImageData = null;
+            originalImageBlob = null;
+            const uploadArea = document.getElementById('imageUploadArea');
+            uploadArea.classList.remove('has-image');
+            uploadArea.innerHTML = `<div class="upload-icon">📸</div><div class="upload-text">اضغط أو اسحب صورة هنا</div><input type="file" id="imageInput" accept="image/*" onchange="handleImageUpload(event)">`;
+            document.getElementById('imagePreviewSection').style.display = 'none';
+            showToast('تم مسح النموذج', 'info');
+        }
+
+        // =============================================
+        // IMAGE UPLOAD
+        // =============================================
+        let originalImageBlob = null;
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            originalImageBlob = file;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                currentImageData = e.target.result;
+                const uploadArea = document.getElementById('imageUploadArea');
+                uploadArea.classList.add('has-image');
+                uploadArea.innerHTML = `<img src="${currentImageData}" alt="معاينة">
+            <input type="file" id="imageInput" accept="image/*" onchange="handleImageUpload(event)">`;
+
+                // Show preview section with original image
+                document.getElementById('imagePreviewSection').style.display = 'block';
+                document.getElementById('originalPreview').src = currentImageData;
+                document.getElementById('processedBox').style.display = 'none';
+                document.getElementById('bgRemoveBtn').style.display = 'inline-flex';
+                document.getElementById('bgRemoveBtn').disabled = false;
+                document.getElementById('bgRemoveBtn').innerHTML = '🪄 حذف خلفية الصورة';
+                document.getElementById('progressContainer').style.display = 'none';
+
+                // Auto-fill image URL field if exists
+                appData.fields.forEach((field, i) => {
+                    if (field.type === 'url' && field.name.includes('صورة')) {
+                        const el = document.getElementById(`field_${i}`);
+                        if (el) el.value = `uploaded_image_${Date.now()}.png`;
+                    }
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // =============================================
+        // BACKGROUND REMOVAL
+        // =============================================
+        async function removeBackground() {
+            if (!originalImageBlob) {
+                showToast('يرجى رفع صورة أولاً', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('bgRemoveBtn');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+
+            btn.disabled = true;
+            btn.innerHTML = '⏳ جاري المعالجة...';
+            progressContainer.style.display = 'block';
+            progressBar.style.width = '10%';
+            progressText.textContent = 'جاري تحميل النموذج... (المرة الأولى قد تستغرق دقيقة)';
+
+            try {
+                // Load Transformers.js dynamically
+                progressBar.style.width = '20%';
+                progressText.textContent = 'جاري تحميل مكتبة الذكاء الاصطناعي...';
+
+                if (!window.transformersReady) {
+                    throw new Error('Transformers.js library not loaded yet. Please refresh and try again.');
+                }
+                const { pipeline, env } = await window.transformersReady;
+
+                // Use remote models from HuggingFace CDN
+                env.allowLocalModels = false;
+
+                progressBar.style.width = '40%';
+                progressText.textContent = 'جاري تحميل نموذج حذف الخلفية...';
+
+                // Create image segmentation pipeline using RMBG model
+                const segmenter = await pipeline('image-segmentation', 'briaai/RMBG-1.4', {
+                    device: 'webgpu',
+                    dtype: 'fp32',
+                });
+
+                progressBar.style.width = '70%';
+                progressText.textContent = 'جاري معالجة الصورة...';
+
+                // Create an image URL from the blob
+                const imageUrl = URL.createObjectURL(originalImageBlob);
+
+                // Run segmentation
+                const output = await segmenter(imageUrl, {
+                    threshold: 0.5,
+                    mask_threshold: 0.5,
+                });
+
+                URL.revokeObjectURL(imageUrl);
+
+                progressBar.style.width = '90%';
+                progressText.textContent = 'جاري إنهاء المعالجة...';
+
+                // Get the mask from output and apply it
+                if (output && output.length > 0 && output[0].mask) {
+                    const maskBlob = output[0].mask;
+                    const maskUrl = URL.createObjectURL(maskBlob);
+
+                    // Create canvas to apply the mask
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+
+                    // Load original image
+                    const origImg = new Image();
+                    origImg.crossOrigin = 'anonymous';
+
+                    await new Promise((resolve, reject) => {
+                        origImg.onload = resolve;
+                        origImg.onerror = reject;
+                        origImg.src = currentImageData;
+                    });
+
+                    canvas.width = origImg.width;
+                    canvas.height = origImg.height;
+
+                    // Load mask image
+                    const maskImg = new Image();
+
+                    await new Promise((resolve, reject) => {
+                        maskImg.onload = resolve;
+                        maskImg.onerror = reject;
+                        maskImg.src = maskUrl;
+                    });
+
+                    // Draw original image
+                    ctx.drawImage(origImg, 0, 0);
+
+                    // Get image data
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+                    // Create temp canvas for mask
+                    const maskCanvas = document.createElement('canvas');
+                    const maskCtx = maskCanvas.getContext('2d');
+                    maskCanvas.width = canvas.width;
+                    maskCanvas.height = canvas.height;
+                    maskCtx.drawImage(maskImg, 0, 0, canvas.width, canvas.height);
+                    const maskData = maskCtx.getImageData(0, 0, canvas.width, canvas.height);
+
+                    // Apply mask as alpha channel
+                    for (let i = 0; i < imageData.data.length; i += 4) {
+                        imageData.data[i + 3] = maskData.data[i]; // Use red channel of mask as alpha
+                    }
+
+                    ctx.putImageData(imageData, 0, 0);
+                    URL.revokeObjectURL(maskUrl);
+
+                    // Convert canvas to blob
+                    const resultBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                    const resultUrl = URL.createObjectURL(resultBlob);
+
+                    // Show processed image
+                    document.getElementById('processedBox').style.display = 'block';
+                    document.getElementById('processedPreview').src = resultUrl;
+
+                    // Convert to data URL
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        currentImageData = e.target.result;
+                        const uploadArea = document.getElementById('imageUploadArea');
+                        uploadArea.innerHTML = `<img src="${currentImageData}" alt="معاينة">
+                            <input type="file" id="imageInput" accept="image/*" onchange="handleImageUpload(event)">`;
+                    };
+                    reader.readAsDataURL(resultBlob);
+
+                    progressBar.style.width = '100%';
+                    progressText.textContent = '✅ تمت إزالة الخلفية بنجاح!';
+                    btn.innerHTML = '✅ تمت المعالجة';
+                    btn.disabled = true;
+                    showToast('تم حذف خلفية الصورة بنجاح! ✨');
+                } else {
+                    throw new Error('No mask output from segmentation');
+                }
+
+            } catch (err) {
+                console.error('Background removal error:', err);
+
+                // Fallback: try without webgpu (use wasm instead)
+                if (err.message && (err.message.includes('webgpu') || err.message.includes('WebGPU') || err.message.includes('adapter'))) {
+                    progressText.textContent = 'جاري إعادة المحاولة بطريقة بديلة...';
+                    try {
+                        await removeBackgroundFallback(btn, progressBar, progressText);
+                        return;
+                    } catch (fallbackErr) {
+                        console.error('Fallback error:', fallbackErr);
+                    }
+                }
+
+                progressText.textContent = '❌ فشلت المعالجة';
+                btn.innerHTML = '🪄 إعادة المحاولة';
+                btn.disabled = false;
+                showToast('فشل في حذف الخلفية. حاول مرة أخرى.', 'error');
+            }
+        }
+
+        // Fallback without WebGPU
+        async function removeBackgroundFallback(btn, progressBar, progressText) {
+            if (!window.transformersReady) {
+                throw new Error('Transformers.js library not loaded');
+            }
+            const { pipeline, env } = await window.transformersReady;
+            env.allowLocalModels = false;
+
+            progressBar.style.width = '40%';
+            progressText.textContent = 'جاري تحميل النموذج (بدون WebGPU)...';
+
+            const segmenter = await pipeline('image-segmentation', 'briaai/RMBG-1.4', {
+                dtype: 'fp32',
+            });
+
+            progressBar.style.width = '70%';
+            progressText.textContent = 'جاري معالجة الصورة...';
+
+            const imageUrl = URL.createObjectURL(originalImageBlob);
+            const output = await segmenter(imageUrl, {
+                threshold: 0.5,
+                mask_threshold: 0.5,
+            });
+            URL.revokeObjectURL(imageUrl);
+
+            if (output && output.length > 0 && output[0].mask) {
+                const maskBlob = output[0].mask;
+                const maskUrl = URL.createObjectURL(maskBlob);
+
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                const origImg = new Image();
+                origImg.crossOrigin = 'anonymous';
+                await new Promise((resolve, reject) => {
+                    origImg.onload = resolve;
+                    origImg.onerror = reject;
+                    origImg.src = currentImageData;
+                });
+
+                canvas.width = origImg.width;
+                canvas.height = origImg.height;
+
+                const maskImg = new Image();
+                await new Promise((resolve, reject) => {
+                    maskImg.onload = resolve;
+                    maskImg.onerror = reject;
+                    maskImg.src = maskUrl;
+                });
+
+                ctx.drawImage(origImg, 0, 0);
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+                const maskCanvas = document.createElement('canvas');
+                const maskCtx = maskCanvas.getContext('2d');
+                maskCanvas.width = canvas.width;
+                maskCanvas.height = canvas.height;
+                maskCtx.drawImage(maskImg, 0, 0, canvas.width, canvas.height);
+                const maskData = maskCtx.getImageData(0, 0, canvas.width, canvas.height);
+
+                for (let i = 0; i < imageData.data.length; i += 4) {
+                    imageData.data[i + 3] = maskData.data[i];
+                }
+
+                ctx.putImageData(imageData, 0, 0);
+                URL.revokeObjectURL(maskUrl);
+
+                const resultBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                const resultUrl = URL.createObjectURL(resultBlob);
+
+                document.getElementById('processedBox').style.display = 'block';
+                document.getElementById('processedPreview').src = resultUrl;
+
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    currentImageData = e.target.result;
+                    const uploadArea = document.getElementById('imageUploadArea');
+                    uploadArea.innerHTML = `<img src="${currentImageData}" alt="معاينة">
+                        <input type="file" id="imageInput" accept="image/*" onchange="handleImageUpload(event)">`;
+                };
+                reader.readAsDataURL(resultBlob);
+
+                progressBar.style.width = '100%';
+                progressText.textContent = '✅ تمت إزالة الخلفية بنجاح!';
+                btn.innerHTML = '✅ تمت المعالجة';
+                btn.disabled = true;
+                showToast('تم حذف خلفية الصورة بنجاح! ✨');
+            } else {
+                throw new Error('No mask output');
+            }
+        }
+
+        // =============================================
+        // ADD PRODUCT
+        // =============================================
+        function addProduct() {
+            const product = {};
+            let hasRequired = false;
+
+            appData.fields.forEach((field, i) => {
+                const el = document.getElementById(`field_${i}`);
+                if (el) {
+                    product[field.name] = el.value;
+                    if (el.value) hasRequired = true;
+                } else if (field.type === 'url' && field.name.includes('صورة')) {
+                    // Image handled separately
+                    product[field.name] = currentImageData ? `image_${Date.now()}` : '';
+                }
+            });
+
+            if (!hasRequired) {
+                showToast('يرجى إكمال بيانات المنتج', 'error');
+                return;
+            }
+
+            // Store image data separately
+            if (currentImageData) {
+                product['_imageData'] = currentImageData;
+            }
+
+            // Extra columns
+            appData.extraColumns.forEach((col, i) => {
+                const el = document.getElementById(`extra_${i}`);
+                if (el) product[col.name] = el.value;
+            });
+
+            // Keep number fields as plain numbers (no comma separators)
+            appData.fields.forEach(field => {
+                if (field.type === 'number' && product[field.name]) {
+                    product[field.name] = String(Number(product[field.name]));
+                }
+            });
+
+            appData.products.push(product);
+            saveData(appData);
+            clearForm();
+            showToast('تمت إضافة المنتج بنجاح! 🎉');
+            switchTab('products');
+        }
+
+        // =============================================
+        // EXTRA COLUMNS
+        // =============================================
+        function openAddColumnModal() {
+            document.getElementById('columnNameInput').value = '';
+            document.getElementById('columnTypeInput').value = 'text';
+            openModal('columnModal');
+        }
+
+        function saveColumn() {
+            const name = document.getElementById('columnNameInput').value.trim();
+            const type = document.getElementById('columnTypeInput').value;
+            if (!name) { showToast('يرجى إدخال اسم العمود', 'error'); return; }
+
+            // Check if column already exists
+            const allCols = [...appData.fields.map(f => f.name), ...appData.extraColumns.map(c => c.name)];
+            if (allCols.includes(name)) { showToast('هذا العمود موجود مسبقاً', 'error'); return; }
+
+            appData.extraColumns.push({ name, type });
+            saveData(appData);
+            closeModal('columnModal');
+            renderProducts();
+            showToast('تم إضافة العمود بنجاح');
+        }
+
+        // =============================================
+        // PRODUCT LIST / TABLE
+        // =============================================
+        function renderProducts() {
+            const container = document.getElementById('tableContainer');
+            const searchQuery = (document.getElementById('searchInput')?.value || '').toLowerCase();
+
+            let products = appData.products;
+
+            // Filter by search
+            if (searchQuery) {
+                products = products.filter(p => {
+                    return Object.values(p).some(v => v && String(v).toLowerCase().includes(searchQuery));
+                });
+            }
+
+            // Update stats
+            document.getElementById('statTotal').textContent = appData.products.length;
+            const uniqueCats = new Set(appData.products.map(p => {
+                const catField = appData.fields.find(f => f.type === 'select');
+                return catField ? p[catField.name] : '';
+            }).filter(Boolean));
+            document.getElementById('statCategories').textContent = uniqueCats.size;
+            document.getElementById('statFields').textContent = appData.fields.length + appData.extraColumns.length;
+
+            if (products.length === 0 && appData.products.length === 0) {
+                container.innerHTML = `<div class="empty-state" id="emptyProducts">
+            <div class="empty-icon">📦</div>
+            <p>لا توجد منتجات بعد</p>
+            <button class="btn btn-primary" onclick="switchTab('add')">➕ أضف أول منتج</button>
+        </div>`;
+                return;
+            }
+
+            if (products.length === 0) {
+                container.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><p>لا توجد نتائج</p></div>`;
+                return;
+            }
+
+            // Build columns: fields + extra columns
+            const columns = [
+                ...appData.fields.filter(f => !(f.type === 'url' && f.name.includes('صورة'))),
+                ...appData.extraColumns
+            ];
+
+            let html = '<table class="product-table"><thead><tr>';
+            html += '<th style="width:60px;">الصورة</th>';
+            columns.forEach(col => {
+                html += `<th>${col.name}</th>`;
+            });
+            html += '<th style="width:120px;">الإجراءات</th>';
+            html += `<th class="add-column-th" onclick="openAddColumnModal()" title="إضافة عمود جديد">➕</th>`;
+            html += '</tr></thead><tbody>';
+
+            products.forEach((product, realIndex) => {
+                // Find real index in appData.products
+                const actualIndex = appData.products.indexOf(product);
+                html += '<tr>';
+
+                // Image
+                html += '<td class="img-cell">';
+                if (product._imageData) {
+                    html += `<img src="${product._imageData}" class="product-image-preview" alt="صورة المنتج">`;
+                } else {
+                    html += '<span style="color:var(--text-muted);">—</span>';
+                }
+                html += '</td>';
+
+                // Fields
+                columns.forEach(col => {
+                    const val = product[col.name] || '—';
+                    html += `<td>${val}</td>`;
+                });
+
+                // Actions
+                html += `<td>
+            <div class="actions-cell">
+                <button class="btn btn-ghost btn-sm" onclick="openEditProduct(${actualIndex})" title="تعديل">✏️</button>
+                <button class="btn btn-danger btn-sm" onclick="promptDeleteProduct(${actualIndex})" title="حذف">🗑️</button>
+            </div>
+        </td>`;
+                html += '<td></td>'; // empty cell for add-column header
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+
+            // Extra columns delete buttons row
+            if (appData.extraColumns.length > 0) {
+                html += '<div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">';
+                appData.extraColumns.forEach((col, i) => {
+                    html += `<button class="btn btn-danger btn-sm" onclick="promptDeleteColumn('${col.name}')">🗑️ حذف عمود: ${col.name}</button>`;
+                });
+                html += '</div>';
+            }
+
+            container.innerHTML = html;
+        }
+
+        function promptDeleteProduct(index) {
+            const nameField = appData.fields[0];
+            const name = nameField ? (appData.products[index][nameField.name] || `منتج #${index + 1}`) : `منتج #${index + 1}`;
+            document.getElementById('deleteItemName').textContent = name;
+            document.getElementById('deleteType').value = 'product';
+            document.getElementById('deleteIndex').value = index;
+            openModal('deleteModal');
+        }
+
+        function promptDeleteColumn(colName) {
+            document.getElementById('deleteItemName').textContent = colName;
+            document.getElementById('deleteType').value = 'column';
+            document.getElementById('deleteIndex').value = -1;
+            openModal('deleteModal');
+        }
+
+        // =============================================
+        // EDIT PRODUCT
+        // =============================================
+        function openEditProduct(index) {
+            const product = appData.products[index];
+            const container = document.getElementById('editProductForm');
+            const columns = [
+                ...appData.fields.filter(f => !(f.type === 'url' && f.name.includes('صورة'))),
+                ...appData.extraColumns
+            ];
+
+            let html = '';
+            columns.forEach((col, i) => {
+                const val = product[col.name] || '';
+                html += `<div class="form-group">
+            <label class="form-label">${col.name}</label>`;
+
+                const field = appData.fields.find(f => f.name === col.name);
+                if (field && field.type === 'select') {
+                    html += `<select class="form-select" id="edit_field_${i}">
+                ${(field.options || appData.categories).map(o => `<option value="${o}" ${o === val ? 'selected' : ''}>${o}</option>`).join('')}
+            </select>`;
+                } else if ((field && field.type === 'number') || col.type === 'number') {
+                    html += `<input type="number" class="form-input" id="edit_field_${i}" value="${val.replace(/,/g, '')}">`;
+                } else {
+                    html += `<input type="text" class="form-input" id="edit_field_${i}" value="${val}">`;
+                }
+                html += '</div>';
+            });
+
+            container.innerHTML = html;
+            document.getElementById('editProductIndex').value = index;
+            openModal('editProductModal');
+        }
+
+        function saveEditProduct() {
+            const index = parseInt(document.getElementById('editProductIndex').value);
+            const product = appData.products[index];
+            const columns = [
+                ...appData.fields.filter(f => !(f.type === 'url' && f.name.includes('صورة'))),
+                ...appData.extraColumns
+            ];
+
+            columns.forEach((col, i) => {
+                const el = document.getElementById(`edit_field_${i}`);
+                if (el) {
+                    let val = el.value;
+                    const field = appData.fields.find(f => f.name === col.name);
+                    if ((field && field.type === 'number') || col.type === 'number') {
+                        val = val ? String(Number(val)) : '';
+                    }
+                    product[col.name] = val;
+                }
+            });
+
+            saveData(appData);
+            closeModal('editProductModal');
+            renderProducts();
+            showToast('تم تعديل المنتج بنجاح');
+        }
+
+        // =============================================
+        // EXCEL EXPORT
+        // =============================================
+        function exportToExcel() {
+            if (appData.products.length === 0) {
+                showToast('لا توجد منتجات للتصدير', 'error');
+                return;
+            }
+
+            const columns = [
+                ...appData.fields.filter(f => !(f.type === 'url' && f.name.includes('صورة'))),
+                ...appData.extraColumns
+            ];
+
+            const exportData = appData.products.map(p => {
+                const row = {};
+                columns.forEach(col => {
+                    row[col.name] = p[col.name] || '';
+                });
+                return row;
+            });
+
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'المنتجات');
+            XLSX.writeFile(wb, 'products.xlsx');
+            showToast('تم تحميل ملف Excel بنجاح 📥');
+        }
+
+        // =============================================
+        // INIT
+        // =============================================
+        function init() {
+            renderProducts();
+        }
+
+        init();
+    </script>
+</body>
+
+</html>
