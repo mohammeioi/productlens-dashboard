@@ -15,6 +15,8 @@ if 'categories' not in st.session_state:
     st.session_state.categories = ["عام"]
 if 'temp_url' not in st.session_state:
     st.session_state.temp_url = ""
+if 'edit_index' not in st.session_state:
+    st.session_state.edit_index = None
 
 st.title("📦 نظام إضافة المنتجات مع معالجة الصور")
 st.markdown("---")
@@ -51,7 +53,6 @@ with col_a:
     name = st.text_input("اسم المنتج")
     
 with col_b:
-    # تعديل السعر ليظهر كعدد صحيح (بدون أصفار زائدة)
     price = st.number_input("السعر", min_value=0, step=250, format="%d")
 
 with col_c:
@@ -66,19 +67,42 @@ with col_c:
 
 image_url = st.text_input("رابط الصورة", value=st.session_state.temp_url)
 
-if st.button("إضافة المنتج للقائمة"):
-    if name and image_url:
-        new_product = {
-            "الاسم": name,
-            "السعر": f"{int(price):,}", # تنسيق السعر مع فواصل للآلاف في الجدول
-            "الفئة": category,
-            "رابط الصورة": image_url
-        }
-        st.session_state.product_list.append(new_product)
-        st.session_state.temp_url = "" 
-        st.success("تمت إضافة المنتج!")
-    else:
-        st.error("يرجى إكمال البيانات.")
+# زر إضافة أو تعديل
+col_btn1, col_btn2 = st.columns(2)
+
+with col_btn1:
+    if st.button("إضافة المنتج للقائمة"):
+        if name and image_url:
+            if st.session_state.edit_index is not None:
+                # تعديل منتج موجود
+                st.session_state.product_list[st.session_state.edit_index] = {
+                    "الاسم": name,
+                    "السعر": price,
+                    "الفئة": category,
+                    "الصور": image_url
+                }
+                st.session_state.edit_index = None
+                st.success("تم تعديل المنتج!")
+            else:
+                # إضافة منتج جديد
+                new_product = {
+                    "الاسم": name,
+                    "السعر": price,
+                    "الفئة": category,
+                    "الصور": image_url
+                }
+                st.session_state.product_list.append(new_product)
+                st.success("تمت إضافة المنتج!")
+            st.session_state.temp_url = ""
+            st.rerun()
+        else:
+            st.error("يرجى إكمال البيانات.")
+
+with col_btn2:
+    if st.session_state.edit_index is not None:
+        if st.button("إلغاء التعديل"):
+            st.session_state.edit_index = None
+            st.rerun()
 
 st.markdown("---")
 
@@ -88,6 +112,36 @@ if st.session_state.product_list:
     df = pd.DataFrame(st.session_state.product_list)
     st.table(df)
     
+    # أزرار التعديل والحذف
+    st.subheader("إدارة المنتجات")
+    col1, col2, col3, col4 = st.columns(4)
+    
+    for idx, product in enumerate(st.session_state.product_list):
+        with col1 if idx % 4 == 0 else (col2 if idx % 4 == 1 else (col3 if idx % 4 == 2 else col4)):
+            st.write(f"**{product['الاسم']}**")
+            
+            col_edit, col_delete = st.columns(2)
+            with col_edit:
+                if st.button(f"✏️ تعديل", key=f"edit_{idx}"):
+                    # حشو الحقول بقيم المنتج للاستخدام في التعديل
+                    st.session_state.edit_index = idx
+                    st.experimental_set_query_params()  # يجبر rerun آمن
+                    st.session_state.show_fill = True
+                    st.session_state.fill_name = product["الاسم"]
+                    st.session_state.fill_price = product["السعر"]
+                    st.session_state.fill_category = product["الفئة"]
+                    st.session_state.fill_image_url = product["الصور"]
+                    st.rerun()
+            
+            with col_delete:
+                if st.button(f"🗑️ حذف", key=f"delete_{idx}"):
+                    st.session_state.product_list.pop(idx)
+                    st.success("تم حذف المنتج!")
+                    st.rerun()
+    
+    st.markdown("---")
+    
+    # تصدير إلى Excel
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df.to_excel(writer, index=False)
@@ -98,3 +152,5 @@ if st.session_state.product_list:
         file_name="products.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+else:
+    st.info("لا توجد منتجات حتى الآن. أضف منتج جديد!")
