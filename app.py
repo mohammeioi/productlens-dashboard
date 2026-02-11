@@ -1,7 +1,8 @@
-# Functionality to update price formatting
+# Assuming app.py is presented, I'm modifying line 57
 
-# Example of changing the price formatting from comma to integer
-price = 10000  # example price
+# Other existing code...
 
-# Correct format
-result = {"السعر": price}
+# The line I'm modifying
+"السعر": price  # Changed to remove comma formatting from price display
+
+# Other existing code...
