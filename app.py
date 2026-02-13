@@ -10,7 +10,9 @@ try:
 except Exception:
     REMBG_AVAILABLE = False
 
+# ===============================
 # إعدادات الصفحة
+# ===============================
 st.set_page_config(
     page_title="مدير المنتجات - تخصيص كامل",
     layout="wide"
@@ -35,14 +37,21 @@ with st.expander("🛠️ إعدادات الحقول والأعمدة"):
 
     # ➕ إضافة حقل
     with col1:
-        with st.form("add_column_form"):
-            new_col = st.text_input("➕ أضف حقل جديد")
+        with st.form("add_column_form", clear_on_submit=True):
+            raw_col = st.text_input("➕ أضف حقل جديد")
             add_submitted = st.form_submit_button("إضافة الحقل")
 
             if add_submitted:
+                new_col = raw_col.strip()
+
+                existing_cols = [
+                    c.strip().lower()
+                    for c in st.session_state.columns
+                ]
+
                 if not new_col:
                     st.warning("اكتب اسم الحقل أولاً")
-                elif new_col in st.session_state.columns:
+                elif new_col.lower() in existing_cols:
                     st.warning("هذا الحقل موجود بالفعل")
                 else:
                     st.session_state.columns.append(new_col)
