@@ -1,1 +1,110 @@
-import streamlit as st\nimport pandas as pd\nfrom rembg import remove\nfrom PIL import Image\nimport io\n\n# 1. إعدادات الصفحة\nst.set_page_config(page_title=\"مدير المنتجات - تخصيص كامل\", layout=\"wide\")\n\n# 2. تهيئة مخزن البيانات\nif 'product_list' not in st.session_state:\n    st.session_state.product_list = []\nif 'columns' not in st.session_state:\n    # الأعمدة الافتراضية التي يمكنك حذفها أو تغييرها من الواجهة\n    st.session_state.columns = [\"الاسم\", \"السعر\", \"الفئة\", \"الصورة\"]\nif 'temp_url' not in st.session_state:\n    st.session_state.temp_url = \"\"\n\nst.title(\"⚙️ نظام إدارة المنتجات (تحكم كامل بالحقول)\")\n\n# --- القسم الجديد: إعدادات الحقول ---\nwith st.expander(\"🛠️ إعدادات الحقول والأعمدة (أضف/احذف/عدل الحقول الأساسية)\"):\n    st.write(\"صمم شكل الجدول الخاص بك هنا:\")\n    \n    # إضافة حقل جديد\n    new_col = st.text_input(\"اسم الحقل الجديد\")\n    if st.button(\"إضافة حقل\"):\n        if new_col and new_col not in st.session_state.columns:\n            st.session_state.columns.append(new_col)\n            st.rerun()\n            \n    # عرض الحقول الحالية مع خيار الحذف\n    st.write(\"الحقول الحالية:\")\n    cols_to_delete = []\n    for c in st.session_state.columns:\n        c1, c2 = st.columns([4, 1])\n        c1.text(f\"📍 {c}\")\n        if c2.button(\"حذف\", key=f\"del_col_{c}\"):\n            st.session_state.columns.remove(c)\n            st.rerun()\n\nst.markdown(\"---\")\n\n# القسم الأول: معالجة الصورة (اختياري)\nst.header(\"1. معالجة صورة المنتج\")\nuploaded_file = st.file_uploader(\"اختر صورة المنتج...\", type=[\"jpg\", \"jpeg\", \"png\"])\nif uploaded_file:\n    if st.button(\"حذف الخلفية\"):\n        with st.spinner(\"جاري المعالجة...\"):\n            img = remove(Image.open(uploaded_file))\n            st.session_state.temp_url = f\"https://img-host.com/img_{len(st.session_state.product_list)}.png\"\n            st.image(img, width=200)\n            st.success(\"تمت المعالجة!\")\n\nst.markdown(\"---\")\n\n# القسم الثاني: إدخال البيانات حسب الحقول المختارة\nst.header(\"2. إدخال بيانات المنتج\")\nnew_entry = {}\n\n# توليد حقول الإدخال ديناميكياً بناءً على قائمة الأعمدة\ngrid_cols = st.columns(len(st.session_state.columns) if st.session_state.columns else 1)\n\nfor i, col_name in enumerate(st.session_state.columns):\n    with grid_cols[i % len(grid_cols)]:\n        if \"السعر\" in col_name:\n            new_entry[col_name] = st.number_input(col_name, min_value=0, format=\"%d\", key=f\"input_{col_name}\")\n        elif \"الصورة\" in col_name:\n            new_entry[col_name] = st.text_input(col_name, value=st.session_state.temp_url, key=f\"input_{col_name}\")\n        else:\n            new_entry[col_name] = st.text_input(col_name, key=f\"input_{col_name}\")\n\nif st.button(\"➕ إضافة المنتج للقائمة\"):\n    if any(new_entry.values()):\n        st.session_state.product_list.append(new_entry)\n        st.session_state.temp_url = \"\"\n        st.success(\"تمت الإضافة!\")\n        st.rerun()\n        \nst.markdown(\"---\")\n\n# القسم الثالث: الإدارة والتصدير\nst.header(\"3. إدارة القائمة\")\nif st.session_state.product_list:\n    df = pd.DataFrame(st.session_state.product_list)\n    \n    # التأكد من ترتيب الأعمدة حسب اختيار المستخدم\n    df = df.reindex(columns=st.session_state.columns)\n    \n    edited_df = st.data_editor(\n        df, \n        num_rows=\"dynamic\",\n        use_container_width=True,\n        column_config={\n            \"السعر\": st.column_config.NumberColumn(format=\"%d\"),\n            \"الصورة\": st.column_config.LinkColumn()\n        }\n    )\n    \n    # حفظ التعديلات تلقائياً عند أي تغيير\n    st.session_state.product_list = edited_df.to_dict('records')\n    st.success(\"تم الحفظ تلقائياً!\")\n    \n    # تصدير Excel\n    output = io.BytesIO()\n    with pd.ExcelWriter(output, engine='openpyxl') as writer:\n        edited_df.to_excel(writer, index=False)\n    st.download_button(\"📥 تحميل Excel\", output.getvalue(), \"products.xlsx\")\nelse:\n    st.info(\"القائمة فارغة.\")
+import streamlit as st
+import pandas as pd
+from PIL import Image
+import io
+
+# حاول استيراد rembg (اختياري)
+try:
+    from rembg import remove
+    REMBG_AVAILABLE = True
+except Exception:
+    REMBG_AVAILABLE = False
+
+# إعدادات الصفحة
+st.set_page_config(
+    page_title="مدير المنتجات - تخصيص كامل",
+    layout="wide"
+)
+
+# تهيئة الحالة
+if "product_list" not in st.session_state:
+    st.session_state.product_list = []
+
+if "columns" not in st.session_state:
+    st.session_state.columns = ["الاسم", "السعر", "الفئة", "الصورة"]
+
+st.title("⚙️ نظام إدارة المنتجات (تحكم كامل بالحقول)")
+
+# ===============================
+# إعدادات الحقول
+# ===============================
+with st.expander("🛠️ إعدادات الحقول والأعمدة"):
+    col1, col2 = st.columns(2)
+
+    with col1:
+        new_col = st.text_input("➕ أضف حقل جديد")
+        if st.button("إضافة الحقل"):
+            if new_col and new_col not in st.session_state.columns:
+                st.session_state.columns.append(new_col)
+                st.success(f"تمت إضافة الحقل: {new_col}")
+
+    with col2:
+        del_col = st.selectbox("🗑️ حذف حقل", st.session_state.columns)
+        if st.button("حذف الحقل"):
+            if del_col in st.session_state.columns:
+                st.session_state.columns.remove(del_col)
+                for p in st.session_state.product_list:
+                    p.pop(del_col, None)
+                st.warning(f"تم حذف الحقل: {del_col}")
+
+# ===============================
+# إضافة منتج
+# ===============================
+st.subheader("➕ إضافة منتج جديد")
+
+new_product = {}
+
+for col in st.session_state.columns:
+    if col == "السعر":
+        new_product[col] = st.number_input(col, min_value=0.0, step=0.5)
+    elif col == "الصورة":
+        uploaded = st.file_uploader("صورة المنتج", type=["png", "jpg", "jpeg"])
+        if uploaded:
+            image = Image.open(uploaded)
+
+            if REMBG_AVAILABLE:
+                if st.checkbox("إزالة الخلفية"):
+                    img_bytes = io.BytesIO()
+                    image.save(img_bytes, format="PNG")
+                    image = Image.open(
+                        io.BytesIO(remove(img_bytes.getvalue()))
+                    )
+
+            buf = io.BytesIO()
+            image.save(buf, format="PNG")
+            new_product[col] = buf.getvalue()
+            st.image(image, width=150)
+        else:
+            new_product[col] = None
+    else:
+        new_product[col] = st.text_input(col)
+
+if st.button("✅ إضافة المنتج"):
+    st.session_state.product_list.append(new_product)
+    st.success("تمت إضافة المنتج بنجاح")
+
+# ===============================
+# عرض المنتجات
+# ===============================
+st.subheader("📦 المنتجات")
+
+if st.session_state.product_list:
+    df = pd.DataFrame(st.session_state.product_list)
+
+    edited_df = st.data_editor(df, use_container_width=True)
+
+    st.session_state.product_list = edited_df.to_dict(orient="records")
+
+    # تصدير Excel
+    excel_buffer = io.BytesIO()
+    edited_df.to_excel(excel_buffer, index=False)
+    excel_buffer.seek(0)
+
+    st.download_button(
+        "📥 تحميل Excel",
+        excel_buffer,
+        file_name="products.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+else:
+    st.info("لا توجد منتجات بعد")
