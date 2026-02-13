@@ -3,7 +3,7 @@ import pandas as pd
 from PIL import Image
 import io
 
-# حاول استيراد rembg (اختياري)
+# rembg اختياري
 try:
     from rembg import remove
     REMBG_AVAILABLE = True
@@ -16,7 +16,9 @@ st.set_page_config(
     layout="wide"
 )
 
+# ===============================
 # تهيئة الحالة
+# ===============================
 if "product_list" not in st.session_state:
     st.session_state.product_list = []
 
@@ -31,21 +33,36 @@ st.title("⚙️ نظام إدارة المنتجات (تحكم كامل بال�
 with st.expander("🛠️ إعدادات الحقول والأعمدة"):
     col1, col2 = st.columns(2)
 
+    # ➕ إضافة حقل
     with col1:
-        new_col = st.text_input("➕ أضف حقل جديد")
-        if st.button("إضافة الحقل"):
-            if new_col and new_col not in st.session_state.columns:
-                st.session_state.columns.append(new_col)
-                st.success(f"تمت إضافة الحقل: {new_col}")
+        with st.form("add_column_form"):
+            new_col = st.text_input("➕ أضف حقل جديد")
+            add_submitted = st.form_submit_button("إضافة الحقل")
 
+            if add_submitted:
+                if not new_col:
+                    st.warning("اكتب اسم الحقل أولاً")
+                elif new_col in st.session_state.columns:
+                    st.warning("هذا الحقل موجود بالفعل")
+                else:
+                    st.session_state.columns.append(new_col)
+                    st.success(f"تمت إضافة الحقل: {new_col}")
+
+    # 🗑️ حذف حقل
     with col2:
-        del_col = st.selectbox("🗑️ حذف حقل", st.session_state.columns)
-        if st.button("حذف الحقل"):
-            if del_col in st.session_state.columns:
-                st.session_state.columns.remove(del_col)
-                for p in st.session_state.product_list:
-                    p.pop(del_col, None)
-                st.warning(f"تم حذف الحقل: {del_col}")
+        with st.form("delete_column_form"):
+            del_col = st.selectbox(
+                "🗑️ حذف حقل",
+                st.session_state.columns
+            )
+            del_submitted = st.form_submit_button("حذف الحقل")
+
+            if del_submitted:
+                if del_col in st.session_state.columns:
+                    st.session_state.columns.remove(del_col)
+                    for p in st.session_state.product_list:
+                        p.pop(del_col, None)
+                    st.warning(f"تم حذف الحقل: {del_col}")
 
 # ===============================
 # إضافة منتج
@@ -56,14 +73,23 @@ new_product = {}
 
 for col in st.session_state.columns:
     if col == "السعر":
-        new_product[col] = st.number_input(col, min_value=0.0, step=0.5)
+        new_product[col] = st.number_input(
+            col,
+            min_value=0.0,
+            step=0.5
+        )
+
     elif col == "الصورة":
-        uploaded = st.file_uploader("صورة المنتج", type=["png", "jpg", "jpeg"])
+        uploaded = st.file_uploader(
+            "صورة المنتج",
+            type=["png", "jpg", "jpeg"]
+        )
+
         if uploaded:
             image = Image.open(uploaded)
 
             if REMBG_AVAILABLE:
-                if st.checkbox("إزالة الخلفية"):
+                if st.checkbox("إزالة الخلفية", key=f"bg_{uploaded.name}"):
                     img_bytes = io.BytesIO()
                     image.save(img_bytes, format="PNG")
                     image = Image.open(
@@ -76,6 +102,7 @@ for col in st.session_state.columns:
             st.image(image, width=150)
         else:
             new_product[col] = None
+
     else:
         new_product[col] = st.text_input(col)
 
@@ -91,7 +118,11 @@ st.subheader("📦 المنتجات")
 if st.session_state.product_list:
     df = pd.DataFrame(st.session_state.product_list)
 
-    edited_df = st.data_editor(df, use_container_width=True)
+    edited_df = st.data_editor(
+        df,
+        use_container_width=True,
+        num_rows="dynamic"
+    )
 
     st.session_state.product_list = edited_df.to_dict(orient="records")
 
