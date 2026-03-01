@@ -1,108 +1,93 @@
 import streamlit as st
 import pandas as pd
+import cloudinary
+import cloudinary.uploader
+from io import BytesIO
 
 # ===============================
-# إعدادات الصفحة
+# 1. إعدادات Cloudinary الخاصة بك
 # ===============================
-st.set_page_config(
-    page_title="مدير المنتجات - تخصيص كامل",
-    layout="wide"
+cloudinary.config( 
+  cloud_name = "dnkjwxkrp", 
+  api_key = "183137181334566", 
+  api_secret = "Amyk9rxJeAmDcsyzienGVuXshQc",
+  secure = True
 )
 
-# ===============================
-# تهيئة الحالة
-# ===============================
+st.set_page_config(page_title="مدير المنتجات الذكي", layout="wide", page_icon="🛍️")
+
 if "product_list" not in st.session_state:
     st.session_state.product_list = []
 
-if "columns" not in st.session_state:
-    st.session_state.columns = ["الاسم", "السعر", "الفئة", "الصورة"]
-
-st.title("⚙️ نظام إدارة المنتجات (تحكم كامل بالحقول)")
+st.title("🛍️ نظام إدارة المنتجات (حل مشكلة تبديل الكاميرا)")
 
 # ===============================
-# إعدادات الحقول
+# 2. إضافة منتج جديد
 # ===============================
-with st.expander("🛠️ إعدادات الحقول والأعمدة"):
-    col1, col2 = st.columns(2)
+col1, col2 = st.columns([1, 1])
 
-    # ➕ إضافة حقل
-    with col1:
-        with st.form("add_column_form", clear_on_submit=True):
-            raw_col = st.text_input("➕ أضف حقل جديد")
-            add_submitted = st.form_submit_button("إضافة الحقل")
+with col1:
+    # ملاحظة: أخرجنا اختيار المصدر خارج الـ Form لضمان استجابة واجهة المستخدم فوراً
+    st.subheader("➕ تفاصيل المنتج")
+    
+    name = st.text_input("اسم المنتج", key="prod_name")
+    price = st.number_input("السعر", min_value=0.0, step=0.1, key="prod_price")
+    
+    categories = ["إلكترونيات", "ملابس", "أدوات منزلية", "أغذية", "عطور", "أخرى"]
+    category_selection = st.selectbox("اختر الفئة", categories)
+    
+    final_category = category_selection
+    if category_selection == "أخرى":
+        final_category = st.text_input("اكتب الفئة الجديدة هنا")
 
-            if add_submitted:
-                new_col = raw_col.strip()
-                existing_cols = [c.strip().lower() for c in st.session_state.columns]
-
-                if not new_col:
-                    st.warning("اكتب اسم الحقل أولاً")
-                elif new_col.lower() in existing_cols:
-                    st.warning("هذا الحقل موجود بالفعل")
-                else:
-                    st.session_state.columns.append(new_col)
-                    st.success(f"تمت إضافة الحقل: {new_col}")
-
-    # 🗑️ حذف حقل
-    with col2:
-        with st.form("delete_column_form"):
-            del_col = st.selectbox("🗑️ حذف حقل", st.session_state.columns)
-            del_submitted = st.form_submit_button("حذف الحقل")
-
-            if del_submitted:
-                if del_col in st.session_state.columns:
-                    st.session_state.columns.remove(del_col)
-                    for p in st.session_state.product_list:
-                        p.pop(del_col, None)
-                    st.warning(f"تم حذف الحقل: {del_col}")
-
-# ===============================
-# إضافة منتج
-# ===============================
-st.subheader("➕ إضافة منتج جديد")
-
-new_product = {}
-
-for col in st.session_state.columns:
-    if col == "السعر":
-        new_product[col] = st.number_input(col, min_value=0.0, step=0.5)
-
-    elif col == "الصورة":
-        img_url = st.text_input("رابط الصورة")
-        new_product[col] = img_url
-
-        if img_url:
-            st.image(img_url, width=150)
-
+    st.write("---")
+    # اختيار مصدر الصورة
+    source = st.radio("مصدر الصورة:", ("الكاميرا 📷", "رفع ملف 📁"), key="img_source")
+    
+    # الحل: استخدام حاوية شرطية لضمان إغلاق الكاميرا تماماً عند اختيار ملف
+    uploaded_file = None
+    if source == "الكاميرا 📷":
+        # إضافة مفتاح فريد (key) يضمن إعادة تشغيل المكون عند التبديل
+        uploaded_file = st.camera_input("التقط صورة", key="camera_widget")
     else:
-        new_product[col] = st.text_input(col)
+        uploaded_file = st.file_uploader("اختر صورة من الجهاز", type=["jpg", "png", "jpeg"], key="file_widget")
 
-if st.button("✅ إضافة المنتج"):
-    st.session_state.product_list.append(new_product)
-    st.success("تمت إضافة المنتج بنجاح")
+    # زر الحفظ خارج الفورم أو داخله، سنبقيه بسيطاً هنا
+    if st.button("حفظ ورفع المنتج ✅"):
+        if uploaded_file and name and final_category:
+            with st.spinner('جاري الرفع لـ Cloudinary...'):
+                try:
+                    upload_result = cloudinary.uploader.upload(uploaded_file)
+                    img_url = upload_result["secure_url"]
+                    
+                    st.session_state.product_list.append({
+                        "الاسم": name,
+                        "السعر": price,
+                        "الفئة": final_category,
+                        "رابط_الصورة": img_url
+                    })
+                    st.success(f"تمت إضافة {name} بنجاح!")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"❌ خطأ في الرفع: {e}")
+        else:
+            st.warning("⚠️ تأكد من ملء الاسم، الفئة، والتقاط/رفع الصورة")
 
 # ===============================
-# عرض المنتجات
+# 3. عرض البيانات وتصدير Excel
 # ===============================
-st.subheader("📦 المنتجات")
+with col2:
+    st.subheader("📦 جدول المنتجات")
+    if st.session_state.product_list:
+        df = pd.DataFrame(st.session_state.product_list)
+        st.data_editor(df, column_config={"رابط_الصورة": st.column_config.LinkColumn("الرابط المباشر")}, use_container_width=True)
 
-if st.session_state.product_list:
-    df = pd.DataFrame(st.session_state.product_list)
-
-    edited_df = st.data_editor(
-        df,
-        use_container_width=True,
-        num_rows="dynamic"
-    )
-
-    st.session_state.product_list = edited_df.to_dict(orient="records")
-
-    st.download_button(
-        "📥 تحميل Excel",
-        edited_df.to_csv(index=False),
-        file_name="products.csv",
-        mime="text/csv"
-    )
-else:
-    st.info("لا توجد منتجات بعد")
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df.to_excel(writer, index=False)
+        
+        st.download_button("📥 تحميل Excel", data=output.getvalue(), file_name="products.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        
+        if st.button("🗑️ مسح القائمة"):
+            st.session_state.product_list = []
+            st.rerun()
