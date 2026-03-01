@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 
 <head>
     <meta charset="UTF-8">
@@ -14,19 +14,74 @@
             overflow: hidden;
             background-color: #0e1117;
             /* Streamlit dark theme color */
+            font-family: sans-serif;
+        }
+
+        /* شاشة التحميل */
+        #loader-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #0e1117;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #ff4b4b;
+            /* Streamlit Primary Red */
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
+            margin-top: 20px;
+            color: #ffffff;
+            font-size: 1.2rem;
+            font-weight: bold;
         }
 
         iframe {
             width: 100%;
             height: 100%;
             border: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
         }
     </style>
 </head>
 
 <body>
-    <iframe src="https://appuctlens-dashboard-sbf8x9cp58udysjsyvxwfv.streamlit.app/?embed=true"
-        allow="camera *; microphone *; geolocation *;"></iframe>
+
+    <!-- شاشة التحميل -->
+    <div id="loader-container">
+        <div class="spinner"></div>
+        <div class="loading-text">جاري تجهيز النظام...</div>
+    </div>
+
+    <!-- التطبيق الفعلي -->
+    <iframe id="app-frame" src="https://appuctlens-dashboard-sbf8x9cp58udysjsyvxwfv.streamlit.app/?embed=true"
+        allow="camera *; microphone *; geolocation *;"
+        onload="document.getElementById('loader-container').style.opacity = '0'; setTimeout(() => document.getElementById('loader-container').style.display = 'none', 500);">
+    </iframe>
+
 </body>
 
 </html>
