@@ -12,8 +12,8 @@
             padding: 0;
             height: 100%;
             overflow: hidden;
-            background-color: #0e1117;
-            /* Streamlit dark theme color */
+            background-color: #f7f9fc;
+            /* Light background for Vercel apps */
             font-family: sans-serif;
         }
 
@@ -24,7 +24,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: #0e1117;
+            background-color: #f7f9fc;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -36,9 +36,8 @@
         .spinner {
             width: 50px;
             height: 50px;
-            border: 5px solid rgba(255, 255, 255, 0.1);
-            border-top-color: #ff4b4b;
-            /* Streamlit Primary Red */
+            border: 5px solid rgba(0, 0, 0, 0.1);
+            border-top-color: #000000;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -51,7 +50,7 @@
 
         .loading-text {
             margin-top: 20px;
-            color: #ffffff;
+            color: #333333;
             font-size: 1.2rem;
             font-weight: bold;
         }
@@ -77,7 +76,7 @@
     </div>
 
     <!-- التطبيق الفعلي -->
-    <iframe id="app-frame" src="https://appuctlens-dashboard-sbf8x9cp58udysjsyvxwfv.streamlit.app/?embed=true"
+    <iframe id="app-frame" src="https://productlens-dashboard.vercel.app/"
         allow="camera *; microphone *; geolocation *;"
         onload="document.getElementById('loader-container').style.opacity = '0'; setTimeout(() => document.getElementById('loader-container').style.display = 'none', 500);">
     </iframe>
